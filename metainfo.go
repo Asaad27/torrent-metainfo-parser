@@ -9,13 +9,15 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 type MetaInfo struct {
-	announce    string `bencode:"announce"`
-	createdBy   string `bencode:"created by"`
-	comment     string
-	torrentInfo Info `bencode:"info"`
+	announce     string `bencode:"announce"`
+	createdBy    string `bencode:"created by"`
+	creationDate string `bencode:"creation date"`
+	comment      string
+	torrentInfo  Info `bencode:"info"`
 }
 
 type Info struct {
@@ -77,12 +79,16 @@ func readFile(filePath string, sizeOfPiece int64) MetaInfo {
 		pieces += stringHash
 		fmt.Println("piece hash : ", stringHash)
 	}
+	now := time.Now()
+	sec := now.Unix()
+	date := strconv.FormatInt(sec, 10)
 	info.pieces = pieces
 	metaInfo := MetaInfo{
-		announce:    "https:127.0.0.1:6969/announce",
-		createdBy:   "Asaad27",
-		comment:     "hello peers",
-		torrentInfo: info,
+		announce:     "https:127.0.0.1:6969/announce",
+		createdBy:    "Asaad27",
+		comment:      "hello peers",
+		creationDate: date,
+		torrentInfo:  info,
 	}
 
 	return metaInfo
@@ -112,4 +118,5 @@ func main() {
 	errors(err)
 	writeToFile(fileName+".torrent", buff)
 	metaInfo.torrentInfo.infoHash()
+
 }
