@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	errors2 "errors"
 	"fmt"
 	"github.com/jackpal/bencode-go"
 	"log"
@@ -14,27 +15,28 @@ import (
 )
 
 type MetaInfo struct {
-	announce     string `bencode:"announce"`
-	createdBy    string `bencode:"created by"`
-	creationDate int64  `bencode:"creation date"`
-	comment      string
-	torrentInfo  Info `bencode:"info"`
+	Announce     string `bencode:"announce"`
+	CreatedBy    string `bencode:"created by"`
+	CreationDate int64  `bencode:"creation date"`
+	Comment      string `bencode:"comment"`
+	TorrentInfo  Info   `bencode:"info"`
 }
 
 func NewMetaInfo(announce string, createdBy string, comment string, torrentInfo Info) *MetaInfo {
-	if len(os.Args) >= 4 {
-		announce = os.Args[3]
+	if args.Announce != -1 {
+		announce = os.Args[args.Announce]
 	}
-	if len(os.Args) >= 5 {
-		createdBy = os.Args[4]
+	if args.CreatedBy != -1 {
+		createdBy = os.Args[args.CreatedBy]
 	}
-	if len(os.Args) >= 6 {
-		comment = os.Args[5]
+	if args.Comment != -1 {
+		comment = os.Args[args.Comment]
 	}
+
 	now := time.Now()
 	sec := now.Unix()
 
-	return &MetaInfo{announce: announce, createdBy: createdBy, creationDate: sec, comment: comment, torrentInfo: torrentInfo}
+	return &MetaInfo{Announce: announce, CreatedBy: createdBy, CreationDate: sec, Comment: comment, TorrentInfo: torrentInfo}
 }
 
 type Info struct {
@@ -56,6 +58,17 @@ func (info *Info) infoHash() string {
 	ans := sha1.Sum(buf.Bytes())
 	stringHash := hex.EncodeToString(ans[:])
 	return stringHash
+}
+
+type Arguments struct {
+	Comment     int
+	Announce    int
+	CreatedBy   int
+	SizeOfPiece int
+}
+
+func NewArguments() *Arguments {
+	return &Arguments{-1, -1, -1, -1}
 }
 
 func BEncodeMetaInfo(data MetaInfo) (bytes.Buffer, error) {
@@ -106,7 +119,7 @@ func parseFile(filePath string, sizeOfPiece int64) MetaInfo {
 	}
 
 	info := NewInfo(sizeOfFile, fileName, sizeOfPiece, pieces)
-	metaInfo := NewMetaInfo("https:127.0.0.1:6969/announce", "Asaad27", "hello peers", *info)
+	metaInfo := NewMetaInfo("https:127.0.0.1:6969/Announce", "Asaad27", "hello peers", *info)
 
 	return *metaInfo
 }
@@ -125,17 +138,73 @@ func errors(err error) {
 	}
 }
 
+func assertHasNext(i int, Args []string) error {
+
+	if i+1 >= len(Args) {
+		err1 := errors2.New("expected argument after " + Args[i])
+		return err1
+	}
+
+	return nil
+}
+
+func ParseArgs(Args []string) (error, Arguments) {
+	args := NewArguments()
+	for i := 2; i < len(Args); {
+		str := Args[i]
+		if str[0] == '-' && len(str) == 2 {
+			err := assertHasNext(i, Args)
+			if err != nil {
+				return err, *NewArguments()
+			}
+			switch str[1] {
+			case 'p':
+				args.SizeOfPiece = i + 1
+				break
+			case 'c':
+				args.Comment = i + 1
+				break
+			case 'b':
+				args.CreatedBy = i + 1
+				break
+			case 'a':
+				args.Announce = i + 1
+				break
+			default:
+				err1 := errors2.New("unknown command after - ")
+				return err1, *NewArguments()
+			}
+			i += 2
+		} else {
+			err1 := errors2.New("unknown argument : " + Args[i])
+			return err1, *NewArguments()
+		}
+	}
+
+	return nil, *args
+}
+
+var args Arguments
+
 func main() {
 	fileName := os.Args[1]
-	var sizeOfPiece = 16
-	if len(os.Args) > 2 {
-		sizeOfPiece, _ = strconv.Atoi(os.Args[2]) //in KB
+
+	var err error
+	err, args = ParseArgs(os.Args)
+	if err != nil {
+		errors(err)
 	}
+
+	var sizeOfPiece = 16 //default
+	if args.SizeOfPiece != -1 {
+		sizeOfPiece, _ = strconv.Atoi(os.Args[args.SizeOfPiece]) //in KB
+	}
+
 	sizeOfPiece *= 1024
 
 	metaInfo := parseFile(fileName, int64(sizeOfPiece))
 	buff, err := BEncodeMetaInfo(metaInfo)
 	errors(err)
 	writeToFile(fileName+".torrent", buff)
-	fmt.Println("info hash " + strings.ToUpper(metaInfo.torrentInfo.infoHash()))
+	fmt.Println("info hash " + strings.ToUpper(metaInfo.TorrentInfo.infoHash()))
 }

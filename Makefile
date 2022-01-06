@@ -11,6 +11,9 @@ compile:
 	GOOS=windows GOARCH=386 go build -o bin/windows/${BINARY_NAME} ${GO_NAME}
 	GOOS=linux GOARCH=amd64 go build -o bin/linux/amd64/${BINARY_NAME} ${GO_NAME}
 
+test:
+	go test
+
 clean:
 	go clean
 	rm -rf bin/*
