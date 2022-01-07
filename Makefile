@@ -1,4 +1,4 @@
-GO_NAME=metainfo.go
+GO_NAME=metainfoWrite.go
 BINARY_NAME=metainfo
 
 build:
