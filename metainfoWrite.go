@@ -207,4 +207,5 @@ func main() {
 	errors(err)
 	writeToFile(fileName+".torrent", buff)
 	fmt.Println("info hash " + strings.ToUpper(metaInfo.TorrentInfo.infoHash()))
+
 }
