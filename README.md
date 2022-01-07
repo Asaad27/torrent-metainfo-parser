@@ -11,4 +11,4 @@ _flag arguments (optional) :_ <br />
 if not specified they will be replaced by some defined default values
 
 example : <br />
-`examples/iceberg.jpg -a 127.0.0.1:6969 -b Asaad -p 16`
+`./metainfo examples/iceberg.jpg -a 127.0.0.1:6969 -b Asaad -p 16`
